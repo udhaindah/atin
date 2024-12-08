@@ -1,16 +1,11 @@
 import time
 import json
 import random
-import threading
 import websocket
+import threading
 import requests
-import shareithub
-from shareithub import HTTPTools, ASCIITools
 from fake_useragent import UserAgent
-from websocket import WebSocketApp
-
-ASCIITools.print_ascii_intro()
-
+from concurrent.futures import ThreadPoolExecutor
 
 class BotAPI:
     def __init__(self, url):
@@ -21,7 +16,7 @@ class BotAPI:
         self.socket = None
         self.reconnect_attempts = 0
         self.max_reconnect_attempts = 5  # Maksimal mencoba reconnect
-        self.max_reconnect_interval = 5  # Interval maksimum reconnect dalam detik
+        self.max_reconnect_interval = 30  # Interval maksimum reconnect dalam detik
         self.ping_interval = 1  # Interval ping dalam detik
         self.points_today = 0
         self.points_total = 0
@@ -158,34 +153,44 @@ class BotAPI:
         }
 
         # Menggunakan websocket-client untuk menghubungkan dengan custom header
-ws = WebSocketApp(ws_url, header=headers,
-                  on_message=lambda ws, msg: self.on_message(ws, msg, account),
-                  on_error=self.on_error,
-                  on_close=self.on_close,
-                  on_open=lambda ws: self.on_open(ws, account))
-
+        ws = websocket.WebSocketApp(ws_url, header=headers,
+                                    on_message=lambda ws, msg: self.on_message(ws, msg, account),
+                                    on_error=self.on_error,
+                                    on_close=self.on_close,
+                                    on_open=lambda ws: self.on_open(ws, account))
 
         # Menjalankan WebSocket di thread lain
         ws.run_forever()
 
     def login_from_file(self, file_path):
         """
-        Membaca akun dari file dan mencoba login untuk setiap akun.
+        Membaca akun dari file dan mencoba login untuk setiap akun secara paralel menggunakan ThreadPoolExecutor.
         """
         try:
             with open(file_path, "r") as file:
+                accounts = []
                 for line in file:
                     line = line.strip()
                     if line:  # Mengabaikan baris kosong
-                        email, password = line.split(":")
+                        email, password = line.split("|")
                         account = {'email': email, 'password': password, 'points_today': 0, 'points_total': 0}
-                        self.get_token(email, password)
-                        if self.user_id:
-                            account['user_id'] = self.user_id
-                            self.accounts.append(account)  # Menyimpan akun yang berhasil login
-                            threading.Thread(target=self.connect_websocket, args=(account,)).start()  # Menjalankan WebSocket di thread
+                        accounts.append(account)
+                
+                # Gunakan ThreadPoolExecutor untuk login akun-akun secara paralel
+                with ThreadPoolExecutor(max_workers=3) as executor:
+                    executor.map(self.login_and_connect, accounts)
         except Exception as e:
             print(f"Error saat membaca file: {e}")
+
+    def login_and_connect(self, account):
+        """
+        Fungsi untuk login dan menghubungkan WebSocket untuk setiap akun.
+        """
+        self.get_token(account['email'], account['password'])
+        if self.user_id:
+            account['user_id'] = self.user_id
+            self.accounts.append(account)  # Menyimpan akun yang berhasil login
+            self.connect_websocket(account)  # Menjalankan WebSocket untuk akun tersebut
 
     def display_account_status(self):
         """
