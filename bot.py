@@ -7,6 +7,7 @@ import requests
 import shareithub
 from shareithub import HTTPTools, ASCIITools
 from fake_useragent import UserAgent
+from websocket import WebSocketApp
 
 ASCIITools.print_ascii_intro()
 
@@ -157,11 +158,12 @@ class BotAPI:
         }
 
         # Menggunakan websocket-client untuk menghubungkan dengan custom header
-        ws = websocket.WebSocketApp(ws_url, header=headers,
-                                    on_message=lambda ws, msg: self.on_message(ws, msg, account),
-                                    on_error=self.on_error,
-                                    on_close=self.on_close,
-                                    on_open=lambda ws: self.on_open(ws, account))
+ws = WebSocketApp(ws_url, header=headers,
+                  on_message=lambda ws, msg: self.on_message(ws, msg, account),
+                  on_error=self.on_error,
+                  on_close=self.on_close,
+                  on_open=lambda ws: self.on_open(ws, account))
+
 
         # Menjalankan WebSocket di thread lain
         ws.run_forever()
