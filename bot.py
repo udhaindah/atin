@@ -2,12 +2,14 @@ import time
 import json
 import random
 import threading
+import websocket
+import requests
 import shareithub
-from fake_useragent import UserAgent
-from concurrent.futures import ThreadPoolExecutor
 from shareithub import HTTPTools, ASCIITools
+from fake_useragent import UserAgent
 
 ASCIITools.print_ascii_intro()
+
 
 class BotAPI:
     def __init__(self, url):
@@ -18,7 +20,7 @@ class BotAPI:
         self.socket = None
         self.reconnect_attempts = 0
         self.max_reconnect_attempts = 5  # Maksimal mencoba reconnect
-        self.max_reconnect_interval = 30  # Interval maksimum reconnect dalam detik
+        self.max_reconnect_interval = 5  # Interval maksimum reconnect dalam detik
         self.ping_interval = 1  # Interval ping dalam detik
         self.points_today = 0
         self.points_total = 0
@@ -166,33 +168,22 @@ class BotAPI:
 
     def login_from_file(self, file_path):
         """
-        Membaca akun dari file dan mencoba login untuk setiap akun secara paralel menggunakan ThreadPoolExecutor.
+        Membaca akun dari file dan mencoba login untuk setiap akun.
         """
         try:
             with open(file_path, "r") as file:
-                accounts = []
                 for line in file:
                     line = line.strip()
                     if line:  # Mengabaikan baris kosong
                         email, password = line.split("|")
                         account = {'email': email, 'password': password, 'points_today': 0, 'points_total': 0}
-                        accounts.append(account)
-                
-                # Gunakan ThreadPoolExecutor untuk login akun-akun secara paralel
-                with ThreadPoolExecutor(max_workers=3) as executor:
-                    executor.map(self.login_and_connect, accounts)
+                        self.get_token(email, password)
+                        if self.user_id:
+                            account['user_id'] = self.user_id
+                            self.accounts.append(account)  # Menyimpan akun yang berhasil login
+                            threading.Thread(target=self.connect_websocket, args=(account,)).start()  # Menjalankan WebSocket di thread
         except Exception as e:
             print(f"Error saat membaca file: {e}")
-
-    def login_and_connect(self, account):
-        """
-        Fungsi untuk login dan menghubungkan WebSocket untuk setiap akun.
-        """
-        self.get_token(account['email'], account['password'])
-        if self.user_id:
-            account['user_id'] = self.user_id
-            self.accounts.append(account)  # Menyimpan akun yang berhasil login
-            self.connect_websocket(account)  # Menjalankan WebSocket untuk akun tersebut
 
     def display_account_status(self):
         """
