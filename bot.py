@@ -172,7 +172,7 @@ class BotAPI:
                 for line in file:
                     line = line.strip()
                     if line:  # Mengabaikan baris kosong
-                        email, password = line.split("|")
+                        email, password = line.split(":")
                         account = {'email': email, 'password': password, 'points_today': 0, 'points_total': 0}
                         accounts.append(account)
                 
