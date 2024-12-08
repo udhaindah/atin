@@ -1,11 +1,13 @@
 import time
 import json
 import random
-import websocket
 import threading
-import requests
+import shareithub
 from fake_useragent import UserAgent
 from concurrent.futures import ThreadPoolExecutor
+from shareithub import HTTPTools, ASCIITools
+
+ASCIITools.print_ascii_intro()
 
 class BotAPI:
     def __init__(self, url):
