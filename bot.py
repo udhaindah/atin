@@ -129,7 +129,7 @@ class BotAPI:
                 self.log(account_name, "INFO", "Sent PING message.")
             except Exception as e:
                 self.log(account_name, "ERROR", f"Error saat mengirim PING: {e}")
-            threading.Timer(10, ping).start() 
+            threading.Timer(30, ping).start() 
 
         ping()
 
