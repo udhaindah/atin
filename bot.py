@@ -2,11 +2,12 @@ import websocket
 import threading
 import json
 import time
+import shareithub
 import requests
 from fake_useragent import UserAgent
 from colorama import init, Fore
 from datetime import datetime
-
+from shareithub import shareithub
 
 init(autoreset=True)
 
@@ -250,6 +251,8 @@ class BotAPI:
 
         except Exception as e:
             self.log("Global", "ERROR", f"Error saat membaca file: {e}")
+            
+shareithub()
 
     def login_and_connect(self, email, password, account_name):
         """
