@@ -9,6 +9,8 @@ from colorama import init, Fore
 from datetime import datetime
 from shareithub import shareithub
 
+shareithub()
+
 init(autoreset=True)
 
 class BotAPI:
@@ -252,8 +254,6 @@ class BotAPI:
         except Exception as e:
             self.log("Global", "ERROR", f"Error saat membaca file: {e}")
             
-shareithub()
-
     def login_and_connect(self, email, password, account_name):
         """
         Login dan menghubungkan WebSocket untuk setiap akun.
